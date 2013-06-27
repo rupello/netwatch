@@ -2,10 +2,7 @@ import sys
 import os
 import re
 from datetime import datetime
-
-import sqlalchemy
-from sqlalchemy import create_engine
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, DateTime
+from database import Database
 
 def parse_message(m):
     m = re.match('<(\d+)>(\w+\s+\d+\s+\d+:\d+:\d+)\s+(\S+):\s+(.*)',m)
@@ -46,50 +43,30 @@ def process_message(m):
     except Exception as exc:
         print 'error processing %s' % exc
 
-def create_db(path=':memory:'):
-    engine = create_engine('sqlite:///%s' % path, echo=False)
-    metadata = MetaData()
-    accepts = Table('accepts', metadata,
-        Column('id',Integer, primary_key=True),
-        Column('timestamp', DateTime),
-        Column('proto',String),
-        Column('src',String),
-        Column('dst',String),
-        Column('spt',Integer),
-        Column('dpt',Integer),
-        Column('inp',String),
-        Column('out',String)
-        )
-    # create the tables, if necessary
-    metadata.create_all(engine) 
-    conn = engine.connect()
-
-    return conn,accepts
-    
-
 if __name__ == "__main__":
     import time
 
     tstart = time.time()
-    logpath = 'youlogfile.log'
+    logpath = 'test.log'
     assert os.path.exists(logpath)
-    conn,accepts = create_db(path='%s.db' % logpath)
+    db = Database(path='%s.db' % logpath)
 
     nrecords = 0
     for l in  open(logpath,'r'):
         (n,ts,src,d) = process_message(l)
         if d.startswith('ACCEPT'):
             fields = parse_fields(d)
-            ins = accepts.insert().values(timestamp=ts,
-                                            proto = fields.get('PROTO',''),
-                                            src = fields.get('SRC',''),
-                                            dst = fields.get('DST',''),
-                                            spt = fields.get('SPT',0),
-                                            dpt = fields.get('DPT',0),
-                                            inp = fields.get('IN',''),
-                                            out = fields.get('OUT',''),
-                                            )
-            result = conn.execute(ins)
+            ins = db.accepts.insert().values(
+                timestamp=ts,
+                proto = fields.get('PROTO',''),
+                src = fields.get('SRC',''),
+                dst = fields.get('DST',''),
+                spt = fields.get('SPT',0),
+                dpt = fields.get('DPT',0),
+                inp = fields.get('IN',''),
+                out = fields.get('OUT',''),
+                )
+            result = db.execute(ins)
 
             nrecords += 1
             if nrecords % 100 == 0:

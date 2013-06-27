@@ -7,7 +7,6 @@
 ## That's it... it does nothing else...
 ## There are a few configuration parameters.
 
-LOG_FILE = 'youlogfile.log'
 HOST, PORT = "0.0.0.0", 514
 
 #
@@ -15,9 +14,15 @@ HOST, PORT = "0.0.0.0", 514
 #
 
 import logging
+import logging.handlers
 import SocketServer
+from datetime import datetime
 
-logging.basicConfig(level=logging.INFO, format='%(message)s', datefmt='', filename=LOG_FILE, filemode='a')
+dt = datetime.now()
+logfile = 'syslog_%04d-%02d-%02d.log' % (dt.year,dt.month,dt.day)
+
+
+logging.basicConfig(level=logging.INFO, format='%(message)s', datefmt='', filename=logfile, filemode='a')
 
 class SyslogUDPHandler(SocketServer.BaseRequestHandler):
 
