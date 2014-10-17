@@ -47,7 +47,7 @@ if __name__ == "__main__":
     import time
 
     tstart = time.time()
-    logpath = 'test.log'
+    logpath = r"C:\Users\rlloyd\repos\netwatch\syslog_2014-10-12.log"
     assert os.path.exists(logpath)
     db = Database(path='%s.db' % logpath)
 
@@ -67,13 +67,44 @@ if __name__ == "__main__":
                 out = fields.get('OUT',''),
                 )
             result = db.execute(ins)
+        elif d.startswith('DROP'):
+            fields = parse_fields(d)
+            drp = db.drops.insert().values(
+                timestamp=ts,
+                proto = fields.get('PROTO',''),
+                src = fields.get('SRC',''),
+                dst = fields.get('DST',''),
+                spt = fields.get('SPT',0),
+                dpt = fields.get('DPT',0),
+                inp = fields.get('IN',''),
+                out = fields.get('OUT',''),
+                mac = fields.get('MAC',''),
+                )
+            result = db.execute(drp)
+        elif d.startswith('DHCPACK'):
+            try:
+                fields = parse_fields(d)
+                (type,ip,mac,name) = d.split()
+                arpack = db.arpacks.insert().values(
+                    timestamp=ts,
+                    ip = ip,
+                    mac = mac,
+                    name = name
+                    )
+                result = db.execute(arpack)
+            except:
+                print('error parsing DHCPACK:{}'.format(d))
+                pass
+        else:
+            continue
 
-            nrecords += 1
-            if nrecords % 100 == 0:
-               sys.stdout.write('.')
-            if nrecords % 1000 == 0:
-               sys.stdout.write('\n')
+        nrecords += 1
+        if nrecords % 100 == 0:
+           sys.stdout.write('.')
+        if nrecords % 1000 == 0:
+           sys.stdout.write('\n')
 
     timer = time.time()-tstart
     print '\n%d records inserted in %.1f seconds(%.1f records/s)' % (nrecords,timer,float(nrecords)/timer)
     
+#
